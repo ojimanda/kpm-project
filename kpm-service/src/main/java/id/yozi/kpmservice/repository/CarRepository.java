@@ -9,4 +9,6 @@ public interface CarRepository extends JpaRepository<CarKPM, Long> {
     CarKPM findByName(String name);
 
     boolean existsByName(String name);
+
+    void deleteByName(String name);
 }

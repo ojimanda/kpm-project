@@ -6,6 +6,8 @@ import id.yozi.kpmservice.model.User;
 import id.yozi.kpmservice.model.dto.*;
 import id.yozi.kpmservice.repository.UserRepository;
 import id.yozi.kpmservice.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
@@ -23,12 +25,22 @@ public class UserServiceImpl extends Exception implements UserService {
     @Autowired
     private UserRepository userRepository;
 
+    private HttpServletRequest servletRequest;
+
+    private HttpServletResponse servletResponse;
+
+    @Autowired
+    public UserServiceImpl(HttpServletRequest request, HttpServletResponse response) {
+        this.servletRequest = request;
+        this.servletResponse = response;
+    }
+
 
     @Override
     public ResponseTemplate<UserDTO> createUser(User user) {
         ResponseTemplate<UserDTO> response = new ResponseTemplate<>();
             if(user.getEmail().equals("") || user.getPassword().equals("")) {
-                response.setResponseCode(401);
+                response.setResponseCode(400);
                 response.setResponseMessage("Please Input your email or password");
                 response.setResponseData(new UserDTO());
             } else {
@@ -45,12 +57,12 @@ public class UserServiceImpl extends Exception implements UserService {
                         user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()));
                         userRepository.save(user);
                     } else {
-                        response.setResponseCode(401);
+                        response.setResponseCode(400);
                         response.setResponseMessage("Email already exist");
                         response.setResponseData(new UserDTO());
                     }
                 } else {
-                    response.setResponseCode(401);
+                    response.setResponseCode(400);
                     response.setResponseMessage("Wrong your email or password");
                     response.setResponseData(new UserDTO());
                 }
@@ -70,7 +82,7 @@ public class UserServiceImpl extends Exception implements UserService {
             UserDTO userDTO = mapper.map(user, UserDTO.class);
             response.setResponseData(userDTO);
         } else {
-            response.setResponseCode(401);
+            response.setResponseCode(400);
             response.setResponseMessage("Cannot found user with email "+ email);
             response.setResponseData(new UserDTO());
         }
@@ -86,12 +98,12 @@ public class UserServiceImpl extends Exception implements UserService {
 
         UserUtil util = new UserUtil();
         if(user == null) {
-            response.setResponseCode(401);
+            response.setResponseCode(400);
             response.setResponseMessage("Wrong email or password");
             response.setResponseData(new LoginResponse());
         } else {
             if (user.getToken() != null) {
-                response.setResponseCode(401);
+                response.setResponseCode(400);
                 response.setResponseMessage("User {} "+ user.getEmail()+ " has been logged in");
                 response.setResponseData(new LoginResponse());
             } else {
@@ -106,9 +118,10 @@ public class UserServiceImpl extends Exception implements UserService {
                             token(token).
                             build();
                     response.setResponseData(loginResponse);
+                    servletResponse.setHeader("Authorization", "Bearer "+token);
                     userRepository.save(user);
                 } else {
-                    response.setResponseCode(401);
+                    response.setResponseCode(400);
                     response.setResponseMessage("Wrong email or password");
                     response.setResponseData(new LoginResponse());
                 }

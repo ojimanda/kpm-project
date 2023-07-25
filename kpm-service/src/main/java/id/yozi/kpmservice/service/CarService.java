@@ -10,5 +10,9 @@ public interface CarService {
 
     public ResponseTemplate<List<CarResponse>> getCars();
     public ResponseTemplate<CarResponse> createCar(CarRequest carRequest);
+
+    public ResponseTemplate<CarResponse> getCarByName(String name);
+
+    public ResponseTemplate<CarResponse> editCar(Long id,CarRequest carRequest);
     public ResponseTemplate<CarResponse> deleteCar(String name);
 }

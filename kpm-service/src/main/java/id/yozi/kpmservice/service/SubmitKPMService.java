@@ -12,6 +12,6 @@ public interface SubmitKPMService {
 
     public ResponseTemplate<List<SubmissionResponse>> getUserSubmissions(User user);
 
-    public ResponseTemplate<List<SubmissionResponse>> getSubmission(Long id);
+    public ResponseTemplate<SubmissionResponse> getSubmission(Long id);
 
 }

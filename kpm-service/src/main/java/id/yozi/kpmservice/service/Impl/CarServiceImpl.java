@@ -6,6 +6,8 @@ import id.yozi.kpmservice.model.dto.CarResponse;
 import id.yozi.kpmservice.model.dto.ResponseTemplate;
 import id.yozi.kpmservice.repository.CarRepository;
 import id.yozi.kpmservice.service.CarService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -20,6 +22,16 @@ public class CarServiceImpl implements CarService {
     @Autowired
     CarRepository carRepository;
 
+    private HttpServletRequest servletRequest;
+
+    private HttpServletResponse servletResponse;
+
+    @Autowired
+    public CarServiceImpl(HttpServletRequest request, HttpServletResponse response) {
+        this.servletRequest = request;
+        this.servletResponse = response;
+    }
+
     ModelMapper modelMapper = new ModelMapper();
 
     @Override
@@ -28,7 +40,7 @@ public class CarServiceImpl implements CarService {
 
         List<CarKPM> carKPMS = carRepository.findAll();
         if(carKPMS.size() == 0) {
-            response.setResponseCode(401);
+            response.setResponseCode(400);
             response.setResponseMessage("No Data");
         } else {
             List<CarResponse> carResponses = modelMapper.map(carKPMS, new TypeToken<List<CarResponse>>(){}.getType());
@@ -43,9 +55,8 @@ public class CarServiceImpl implements CarService {
     public ResponseTemplate<CarResponse> createCar(CarRequest carRequest) {
         ResponseTemplate<CarResponse> response = new ResponseTemplate<>();
         boolean carKPM = carRepository.existsByName(carRequest.getName());
-
         if(carKPM) {
-            response.setResponseCode(401);
+            response.setResponseCode(400);
             response.setResponseMessage("Car has been exist");
             response.setResponseData(new CarResponse());
         } else {
@@ -69,7 +80,69 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public ResponseTemplate<CarResponse> deleteCar(String name) {
-        return null;
+    public ResponseTemplate<CarResponse> getCarByName(String name) {
+        ResponseTemplate<CarResponse> response = new ResponseTemplate<>();
+        boolean isExist = carRepository.existsByName(name);
+        if(isExist) {
+            CarKPM carKPM = carRepository.findByName(name);
+
+            response = ResponseTemplate.<CarResponse>builder()
+                    .responseCode(200)
+                    .responseMessage("OK")
+                    .responseData(modelMapper.map(carKPM, CarResponse.class)).build();
+        } else {
+            response = ResponseTemplate.<CarResponse>builder()
+                    .responseCode(400)
+                    .responseMessage("Car with name "+ name+ " not found.").build();
+        }
+        return response;
     }
+
+    @Override
+    public ResponseTemplate<CarResponse> editCar(Long id, CarRequest carRequest) {
+
+        ResponseTemplate<CarResponse> response = new ResponseTemplate<>();
+        boolean isExist = carRepository.existsById(id);
+        if(isExist) {
+            CarKPM carKPM = carRepository.findById(id).orElseThrow();
+            carKPM.setName(carRequest.getName());
+            carKPM.setYear(carRequest.getYear());
+            carKPM.setBrand(carRequest.getBrand());
+            carKPM.setPrice(carRequest.getPrice());
+            CarResponse carResponse = CarResponse.builder()
+                    .name(carKPM.getName())
+                    .brand(carKPM.getBrand())
+                    .price(carKPM.getPrice())
+                    .year(carKPM.getYear()).build();
+            carRepository.save(carKPM);
+            return ResponseTemplate.<CarResponse>builder()
+                    .responseCode(200)
+                    .responseMessage("OK")
+                    .responseData(carResponse).build();
+        } else {
+            return ResponseTemplate.<CarResponse>builder()
+                    .responseCode(400)
+                    .responseMessage("Car doesn't exist")
+                    .responseData(null).build();
+        }
+    }
+
+    @Override
+    public ResponseTemplate<CarResponse> deleteCar(String name) {
+        boolean isExist = carRepository.existsByName(name);
+        String message;
+        int responseCode;
+        if(isExist) {
+            carRepository.deleteByName(name);
+            message = "Car with name "+ name + " has been deleted.";
+            responseCode = 200;
+        } else {
+            message = "Car with name "+ name + " not found.";
+            responseCode = 400;
+        }
+        return ResponseTemplate.<CarResponse>builder()
+                .responseCode(responseCode)
+                .responseMessage(message)
+                .responseData(null).build();
+        }
 }
