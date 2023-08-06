@@ -22,16 +22,6 @@ public class CarServiceImpl implements CarService {
     @Autowired
     CarRepository carRepository;
 
-    private HttpServletRequest servletRequest;
-
-    private HttpServletResponse servletResponse;
-
-    @Autowired
-    public CarServiceImpl(HttpServletRequest request, HttpServletResponse response) {
-        this.servletRequest = request;
-        this.servletResponse = response;
-    }
-
     ModelMapper modelMapper = new ModelMapper();
 
     @Override
